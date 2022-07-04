@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>canvas</title>
+  <style>
+    body {
+      position: relative;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      background-image: url('./素材/musicbanner.png');
+      background-repeat: no-repeat;
+      object-fit: cover;
+      overflow: hidden;
+    }
+
+    #icon {
+      position: absolute;
+      top: 10px;
+      right: 500px;
+      width: 50px;
+      height: 50px;
+      transition: all 0.5s;
+    }
+
+    #icon.dontai {
+      animation: dongtai 1s infinite;
+    }
+
+    @keyframes dongtai {
+      from {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(0.9);
+      }
+
+      to {
+        transform: scale(1);
+      }
+    }
+
+    audio {
+      display: none;
+    }
+
+    canvas {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .panle {
+      position: absolute;
+      width: 250px;
+      height: 100vh;
+      top: 0px;
+      right: -250px;
+      transition: all 0.5s;
+      background-color: #191d22;
+    }
+
+    #controls {
+      display: inline-block;
+      position: absolute;
+      top: 25px;
+      right: 420px;
+      padding: 0px 5px;
+      transition: all 0.5s;
+      background-color: azure;
+      border: 1px solid #fff;
+      border-radius: 5px;
+    }
+
+    .panle.out {
+      right: 2px;
+    }
+
+    p {
+      position: absolute;
+      left: 20%;
+      font-size: 14px;
+      line-height: 14px;
+      color: azure;
+    }
+
+    .music {
+      margin-top: 20px;
+      width: 250px;
+      height: 50px;
+      font-size: 14px;
+      color: aliceblue;
+      border-radius: 5px;
+      line-height: 50px;
+      border: 1px solid #fff;
+    }
+
+    .option {
+      margin-top: 20px;
+      width: 250px;
+      height: 50px;
+      font-size: 14px;
+      color: aliceblue;
+      border-radius: 5px;
+      line-height: 50px;
+      border: 1px solid #fff;
+    }
+
+    #option {
+      margin-top: 20px;
+    }
+
+    #option span {
+      font-size: 16px;
+      color: #fff;
+      text-align: center;
+    }
+
+    .styles {
+      display: inline-block;
+      font-size: 16px;
+      color: #fff;
+      margin: 10px 40px;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div>
+    <p>
+      <span class="title">当前播放:</span>
+      <span id="musicname"></span>
+    </p>
+    <img src="./素材/icon.png" alt="" id="icon">
+    <div id="controls">打开面板</div>
+  </div>
+  <div class="panle">
+    <div id="option">
+      <span>样式</span>
+      <div>
+        <span class="styles" data-id="1">
+          传统
+        </span>
+        <span class="styles" data-id="2">
+          圆形
+        </span>
+        <span class="styles" data-id="3">
+          圆形线条
+        </span>
+      </div>
+    </div>
+  </div>
+  <audio id="audio"
+    src="./素材/EIKO starring 96猫_置鮎龍太郎 (おきあゆりょうたろう)_千叶翔也 (ちば しょうや)_久遠七海 starring Lezel - 気分上々↑↑ (心情HIGH翻天↑↑).flac"
+    preload>
+  </audio>
+  <canvas id="canvas" width="900" height="800"></canvas>
+  <script>
+    let canvas = document.getElementById('canvas');
+    let canvasCtx = canvas?.getContext('2d');
+    let pannel = document.querySelector('.panle');
+    let styles = document.querySelectorAll('.styles');
+    let dataArray = null;
+    let bufferlength = null;
+    let audioCtx = null
+    let analyser = null
+    let drawVisual = null
+    let source = null
+    var WIDTH = canvas?.width;
+    var HEIGHT = canvas?.height;
+    var barHeight;
+    let showstate = 0
+    let flag = true
+    let showControlPanel = false
+    let stylemode = 1
+    let getMusicStr = /([^/]*)$/g
+    let musicList = [
+      './素材/96猫 (クロネコ) - Be Crazy For Me.mp3',
+      './素材/EIKO starring 96猫_置鮎龍太郎 (おきあゆりょうたろう)_千叶翔也 (ちば しょうや)_久遠七海 starring Lezel - 気分上々↑↑ (心情HIGH翻天↑↑).flac',
+      './素材/EIKO starring 96猫 - DREAMER！.mp3',
+    ]
+    let musicNamelist = musicList.map((item, index) => {
+      let str = item.split(' - ')[1].split('.')[0]
+      return str
+    })
+
+    icon.addEventListener('click', function () {
+      if (showstate == 0) {
+        audio.play()
+        showstate = 1
+        doAnimation()
+        icon.classList.add('dontai');
+      } else {
+        audio.pause();
+        showstate = 0
+        icon.classList.remove('dontai');
+      }
+    });
+
+    option.addEventListener('click', (e) => {
+      e.stopPropagation()
+      if (e.target.dataset.id) {
+        if (showstate = 1) {
+          audio.pause()
+          showstate = 0
+        }
+        stylemode = Number(e.target.dataset.id)
+        doAnimation()
+      }
+    })
+
+    controls.addEventListener('click', (e) => {
+      e.stopPropagation()
+      if (!showControlPanel) {
+        pannel.classList.add('out')
+        showControlPanel = true
+      }
+    })
+
+    pannel.addEventListener('click', (e) => {
+      e.stopPropagation()
+      let res = musicList[musicNamelist.indexOf(e.target.textContent)]
+      if (!res) {
+        return
+      }
+      setMusic(res)
+    })
+
+    document.body.addEventListener('click', () => {
+      if (showControlPanel) {
+        showControlPanel = false
+        pannel.classList.remove('out')
+      }
+    })
+
+    function initcharts() {
+      // 生成audio上下文
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      // 创建音频解析器
+      analyser = audioCtx.createAnalyser();
+      // 设置音频解析器的频域数据 2次幂
+      const buffer = analyser.fftSize = 256
+      // 链接音源
+      source = audioCtx.createMediaElementSource(audio);
+      // 获取音频输入输出设备
+      var distortion = audioCtx.createWaveShaper();
+      fillsongs()
+      getName(source)
+      // 链接音频到解析器
+      source.connect(analyser);
+      // 将解析器链接到输出设备
+      // audioCtx.context.destination 也可
+      analyser.connect(distortion.context.destination);
+      // frequencyBinCount 的值固定为 AnalyserNode 接口中 fftSize 值的一半。该属性通常用于可视化的数据值的数量。
+      bufferlength = analyser.frequencyBinCount = 128
+      dataArray = new Uint8Array(bufferlength)
+      // dataArray = new Float32Array(bufferlength)
+    }
+
+    function renderFrame(dataArray) {
+      let buffer = [].concat(Array.from(dataArray).slice(0, 128 / 2),
+        Array.from(dataArray).reverse().slice(128 / 2, 128));
+      canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
+      canvasCtx.save()
+      var barWidth = WIDTH / bufferlength * 1.5;
+      for (var i = 0, x = 0; i <= bufferlength; i++) {
+        barHeight = dataArray[i];
+        let baseheight = (HEIGHT - barHeight) / 2
+        canvasCtx.fillStyle = "rgba(255,255,255,0.7)";
+        canvasCtx.fillRect(x, baseheight, barWidth, barHeight + 1);
+        x += barWidth + 2;
+      }
+      canvasCtx.restore()
+    }
+
+    function doAnimation() {
+      // 重点: analyser.context.resume()消除 AudioContext 需要触发事件才能使用的的条件
+      analyser.context.resume();
+      analyser.getByteFrequencyData(dataArray);
+      requestAnimationFrame(doAnimation);
+      switch (stylemode) {
+        case 1:
+        renderFrame(dataArray)
+          break;
+        case 2:
+        renderFrame1(dataArray)
+          break;
+        case 3:
+        renderFrame2(dataArray)
+          break;
+        default:
+          console.error('不存在...')
+          break;
+      }
+    }
+
+    function renderFrame1(dataArray) {
+      const deg = Math.PI * 2 / bufferlength;
+      // getFloatFrequencyData // 32位
+      // analyser.getFloatFrequencyData(dataArray);
+      // 去除 空位为的0项
+      let buffer = [].concat(Array.from(dataArray).slice(0, 128 / 2),
+        Array.from(dataArray).reverse().slice(128 / 2, 128));
+      // 清除画布
+      canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
+      // 保存之前的画布状态
+      canvasCtx.save();
+      // 移动画布
+      canvasCtx.translate(350, 350);
+
+      for (let i = 0; i < buffer.length; i++) {
+        let barHeight = buffer[i] / 256 * 50;
+        canvasCtx.rotate(deg * i);
+        canvasCtx.fillStyle = "rgba(255,255,255,1)";
+        canvasCtx.fillRect(0, 128, 3, barHeight + 1);
+      }
+      // 在translate改变位置之后 需要恢复画布
+      // (如果调用save方法 ,会恢复到调用save方法之前画布的状态, 如果没有调用save方法保存状态的话, 则什么也不做)
+      canvasCtx.restore()
+    }
+
+    function renderFrame2(dataArray) {
+      const deg = Math.PI * 2 / bufferlength;
+      let buffer = [].concat(Array.from(dataArray).slice(0, 128 / 2),
+        Array.from(dataArray).reverse().slice(128 / 2, 128));
+      let startToDo = true
+      // 清除画布
+      canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
+      // 保存之前的画布状态
+      canvasCtx.save();
+      // 移动画布
+      canvasCtx.translate(350, 350);
+      canvasCtx.lineWidth = 4;
+      canvasCtx.beginPath();
+      for (let i = 0; i <= buffer.length; i++) {
+        let barHeight = (buffer[i] ? buffer[i] : buffer[0]) / 256 * 50;
+        let rotate = deg * i
+        let x = Math.sin(rotate) * (128 + barHeight) ;
+        let y = Math.cos(rotate) * (128 + barHeight) ;
+        // canvasCtx.rotate(deg * i);
+        canvasCtx.strokeStyle = "rgba(255,255,255,1)";
+        if (startToDo) {
+          canvasCtx.moveTo(x, y);
+          startToDo = false
+        } else {
+          canvasCtx.lineTo(x, y);
+        }
+      }
+      canvasCtx.stroke();
+      canvasCtx.closePath();
+      canvasCtx.restore()
+    }
+
+    function getName(source) {
+      musicname.textContent = decodeURI(source.mediaElement.src.match(getMusicStr)[0]);
+    }
+
+    function fillsongs() {
+      musicNamelist.forEach((i) => {
+        let div = document.createElement('div')
+        div.classList.add('music')
+        div.textContent = i
+        pannel.prepend(div)
+      })
+    }
+
+    function setMusic(res) {
+      audio.src = res
+      getName(source)
+      audio.play()
+      doAnimation()
+    }
+
+    setInterval(() => {
+      if (audio.ended) {
+        audio.play()
+        doAnimation()
+      }
+    }, 5000)
+
+    initcharts()
+    doAnimation()
+
+  </script>
+</body>
+
+</html>
