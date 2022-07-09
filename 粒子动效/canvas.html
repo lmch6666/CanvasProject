@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>canvas</title>
+  <style>
+    body {
+      position: relative;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      background-repeat: no-repeat;
+      object-fit: cover;
+      overflow: hidden;
+    }
+  </style>
+</head>
+
+<body>
+
+  <canvas id="canvas" width="1900" height="800"></canvas>
+  <script>
+    let particlelist = [];
+    let initparticel = false
+    const canvasCtx = canvas.getContext('2d')
+    const WIDTH = canvas.width
+    const HEIGHT = canvas.height
+
+    class LightParticle {
+      constructor(options) {
+        this.x = options.x
+        this.y = options.y
+        this.ex = options.ex
+        this.ey = options.ey
+        this.size = options.size
+        this.life = options.life || Math.random() * 5
+        this.color = options.color
+        this.alpha = options.alpha
+        this.render = render
+        this.whiteRainUpdate = whiteRainUpdate
+        this.PinballUpdate = PinballUpdate
+        // Path detection
+        this.isdie = false
+      }
+    }
+
+    // 类似弹球 检测边界碰撞反弹
+    function PinballUpdate(canvasctx) {
+      this.x += this.ex;
+      this.y += this.ey;
+      this.life -= this.life
+      // Detection()
+      if (this.x >= WIDTH) {
+        const jiaorjian = Math.random() * 1 > 0 ? true : false;
+        this.x = jiaorjian ? WIDTH - Math.floor(Math.random() * 50) : WIDTH - Math.floor(Math.random() * 80)
+        this.ex = -this.ex
+      }
+      if (this.y >= HEIGHT) {
+        this.y = HEIGHT;
+        this.ex = this.ex - Math.ceil(Math.random() * 5)
+        this.ey = -this.ey
+      }
+      if (this.y <= 0) {
+        this.y = 0
+        this.ey = -this.ey
+      }
+      if (this.x <= 0) {
+        this.x = 0
+        this.ex = -this.ex
+      }
+      this.render(canvasctx)
+    }
+    
+    // 粒子碰撞检测
+    function Detection() {
+      let len = particlelist.length
+      for (let i = 0; i < len; i++) {
+        let item = particlelist[i]
+        let px1 = item.x
+        let py1 = item.y
+        let p1s = item.size
+        let j = i + 1
+        while (j < len) {
+          let item1 = particlelist[j]
+          let px2 = item1.x
+          let py2 = item1.y
+          let x = px1 - px2
+          let y = py1 - py2
+          let distance = Math.sqrt(x * x + y * y)
+          if (distance > p1s + item1.size) {
+            j++
+            continue
+          }
+          item.ex = -item.ex
+          item1.ex = -item1.ex
+          item.ey = -item.ey
+          item1.ey = -item1.ey
+          j++
+        }
+      }
+    }
+
+    // 金色的雨
+    function whiteRainUpdate(canvasctx) {
+      this.x += this.ex
+      this.y += this.ey
+      this.life -= this.life
+      if (this.life < 0 || this.x > WIDTH || this.y > HEIGHT || this.y < 0 || this.x < 0) {
+        this.isdie = true
+        return;
+      }
+      this.render(canvasctx)
+    }
+
+    function render(ctx) {
+      let _this = this
+      ctx.save()
+      ctx.translate(_this.x, _this.y)
+      ctx.globalAlpha = _this.alpha;
+      ctx.fillStyle = _this.color
+      ctx.fillRect(0, 0, _this.size, _this.size)
+      ctx.restore()
+    }
+
+    function draw() {
+      canvasCtx.clearRect(0, 0, WIDTH, HEIGHT)
+      if (!initparticel) {
+        initparticel = true
+        for (let i = 0; i < 200; i++) {
+          particlelist.push(new LightParticle({
+            x: i * 5,
+            y: 0,
+            ex: Math.random() * 10 - 1,
+            ey: Math.random() * 10 - 1,
+            size: Math.random() * 2 + 4,
+            alpha: 0.6,
+            color: '#F7AEEB'
+          }))
+        }
+      }
+      particlelist.forEach((item) => {
+        item.PinballUpdate(canvasCtx)
+      })
+      requestAnimationFrame(draw)
+    }
+
+    function draw1(params) {
+      canvasCtx.clearRect(0, 0, WIDTH, HEIGHT)
+      if (!initparticel) {
+        initparticel = true
+        for (let i = 0; i < 200; i++) {
+          particlelist.push(new LightParticle({
+            x: i * 15,
+            y: 0,
+            ex: Math.random() * 10 - 1,
+            ey: Math.random() * 10 - 1,
+            size: Math.random() * 2 + 4,
+            alpha: 0.6,
+            color: '#F7AEEB'
+          }))
+        }
+      }
+      const filters = particlelist.filter((i) => {
+        return !i.isdie
+      })
+      while (filters.length < 200) {
+        filters.push(new LightParticle({
+          x: Math.random() * 700,
+          y: 0,
+          ex: Math.random() * 10 - 1,
+          ey: Math.random() * 10 - 1,
+          size: Math.random() * 2 + 4,
+          alpha: 0.6,
+          color: '#F7AEEB'
+        }))
+      }
+      particlelist = filters
+      particlelist.forEach((item) => {
+        item.whiteRainUpdate(canvasCtx)
+      })
+      requestAnimationFrame(draw1)
+    }
+
+    // draw()
+    draw1()
+  </script>
+
+</body>
+
+</html>
