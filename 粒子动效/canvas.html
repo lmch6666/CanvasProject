@@ -53,7 +53,7 @@
       this.x += this.ex;
       this.y += this.ey;
       this.life -= this.life
-      // Detection()
+      Detection()
       if (this.x >= WIDTH) {
         const jiaorjian = Math.random() * 1 > 0 ? true : false;
         this.x = jiaorjian ? WIDTH - Math.floor(Math.random() * 50) : WIDTH - Math.floor(Math.random() * 80)
@@ -78,13 +78,39 @@
     // 粒子碰撞检测
     function Detection() {
       let len = particlelist.length
-      for (let i = 0; i < len; i++) {
+      let i = 0;
+      //#region detection: 0.1728515625 ms
+      // for (let i = 0; i < len; i++) {
+      //   let item = particlelist[i]
+      //   let px1 = item.x
+      //   let py1 = item.y
+      //   let p1s = item.size
+      //   let j = i + 1
+      //   while (j < len) {
+      //     let item1 = particlelist[j]
+      //     let px2 = item1.x
+      //     let py2 = item1.y
+      //     let x = px1 - px2
+      //     let y = py1 - py2
+      //     let distance = Math.sqrt(x * x + y * y)
+      //     if (distance > p1s + item1.size) {
+      //       j++
+      //       continue
+      //     }
+      //     item.ex = -item.ex
+      //     item1.ex = -item1.ex
+      //     item.ey = -item.ey
+      //     item1.ey = -item1.ey
+      //     j++
+      //   }
+      // #endregion 
+      // detection: 0.096923828125 ms
+      while(i < len){
         let item = particlelist[i]
         let px1 = item.x
         let py1 = item.y
         let p1s = item.size
-        let j = i + 1
-        while (j < len) {
+        for (let j = i + 1; j < len; j++){
           let item1 = particlelist[j]
           let px2 = item1.x
           let py2 = item1.y
@@ -99,9 +125,10 @@
           item1.ex = -item1.ex
           item.ey = -item.ey
           item1.ey = -item1.ey
-          j++
         }
+        i++
       }
+      
     }
 
     // 金色的雨
@@ -185,8 +212,8 @@
       requestAnimationFrame(draw1)
     }
 
-    // draw()
-    draw1()
+    draw()
+    // draw1()
   </script>
 
 </body>
